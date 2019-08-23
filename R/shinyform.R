@@ -3,11 +3,29 @@ library(shiny)
 # Test whether a given object is a valid non-empty list
 # @param listname a potential list to verify
 # returns TRUE if the given object is a non-empty list, FALSE otherwise
-testList <- function(listname){
-  return(!is.null(listname) && 
-         length(listname) != 0 &&
-           "list" %in% class(listname))
+testList <- function(listname) {
+  if(!is.null(listname) && 
+     length(listname) != 0 &&
+     "list" %in% class(listname)) return(TRUE)
+  else return(FALSE)
 }
+
+
+# Validate that all essential elements in formInfo are available and are
+# in correct format.
+# @param formInfo a list with essential element - id, questions, storage
+validateFormInfoList <- function(formInfo){
+  if(!testList(formInfo)) {
+    stop("`formInfo` is not a valid list")
+  } else if(!testList(formInfo$questions)) {
+    stop("`questions` set is not a valid list")
+  } else if(!testList(formInfo$storage)) {
+    stop("`storage` set is not a valid list")
+  } else if(is.null(formInfo$id)) {
+    stop("`id` is null")
+  }
+}
+
 
 
 # A list of all the available storage types for shinyforms.
@@ -171,9 +189,7 @@ loadDataGsheets <- function() {
 #'}
 #' @export
 formUI <- function(formInfo) {
-  if (!testList(formInfo)) {
-    stop("`formInfo` is not a valid list")
-  }
+  validateFormInfoList(formInfo)
   
   ns <- NS(formInfo$id)
   
@@ -325,9 +341,7 @@ formUI <- function(formInfo) {
 #' } 
 #' @export
 formServer <- function(formInfo) {
-  if (!testList(formInfo)) {
-    stop("`formInfo` is not a valid list")
-  }
+  validateFormInfoList(formInfo)
   callModule(formServerHelper, formInfo$id, formInfo)
 }
 
@@ -531,9 +545,7 @@ createFormInfo <- function(id, questions, storage, name, multiple = TRUE,
 #' }
 #' @export
 createFormApp <- function(formInfo) {
-  if (!testList(formInfo)) {
-    stop("`formInfo` is not a valid list")
-  }
+  validateFormInfoList(formInfo)
   ui <- fluidPage(
     formUI(formInfo)
   )
@@ -554,3 +566,42 @@ inlineInput <- function(tag) {
   stopifnot(inherits(tag, "shiny.tag"))
   tagAppendAttributes(tag, style = "display: inline-block;")
 }
+
+
+
+# Validates a list containing all the questions in the form
+# @param questions A list of user input fields 
+validateQuestionSet <- function(questions) {
+  for(question in questions) validateQuestion(question$id, question$type, question$title)
+}
+
+
+# Validates a single list from the wider question list, checking if each variable is there
+# @param id 
+# @param type
+# @param title 
+validateQuestion <- function(id, type, title){
+  if(is.null(id)) {
+    stop("Please make sure you provide an ID for each question.")
+  } else if(is.null(type)) {
+    stop("Please make sure you provide a Type for each question.")
+  } else if(is.null(title)) {
+    stop("Please make sure you provide a Title for each question.")
+  } else if(!type %in% c("text", "checkbox", "numeric")) {
+    stop("Please check that the question type is correct.")
+  }
+}
+
+
+# Validates whether all elements in storage list are provided
+# @param storage list containing all relevant storage variables
+validateStorage <- function(storage) {
+  if(is.null(storage$path)) {
+    stop("Please make sure you provide a path to each storage set.")
+  } else if(is.null(storage$type)) {
+    stop("Please make sure you provide a type to each storage set.")
+  }
+}
+
+
+
