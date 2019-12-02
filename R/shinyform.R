@@ -1,4 +1,11 @@
 library(shiny)
+library(yaml)
+
+
+createYamlFile <- function(data) {
+  write(as.yaml(data), "./app.yaml")
+}
+
 
 # Test whether a given object is a valid non-empty list
 # @param listname a potential list to verify
@@ -405,6 +412,7 @@ formServerHelper <- function(input, output, session, formInfo) {
     
     # Save the data (show an error message in case of error)
     tryCatch({
+      createYamlFile(formInfo)
       saveData(formData(), formInfo$storage)
       shinyjs::reset("form")
       shinyjs::hide("form")
